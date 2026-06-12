@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RSS Reader</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .feeds {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    .feed h2 {
+      border-bottom: 2px solid #333;
+      padding-bottom: 8px;
+    }
+
+    .article {
+      background: white;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .article a {
+      font-weight: bold;
+      color: #1a1a1a;
+      text-decoration: none;
+    }
+
+    .article a:hover {
+      text-decoration: underline;
+    }
+
+    .article .date {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    .loading {
+      color: #888;
+      font-style: italic;
+    }
+
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>My RSS Reader</h1>
+
+  <div class="feeds">
+    <div class="feed">
+      <h2>Hacker News</h2>
+      <div id="feed-1" class="loading">Loading...</div>
+    </div>
+
+    <div class="feed">
+      <h2>BBC News</h2>
+      <div id="feed-2" class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    // The rss2json service converts any RSS feed into JSON for us.
+    // We give it the RSS feed URL, it gives us back the articles.
+    const API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+    const feeds = [
+      {
+        url: 'https://news.ycombinator.com/rss',
+        containerId: 'feed-1'
+      },
+      {
+        url: 'https://feeds.bbci.co.uk/news/rss.xml',
+        containerId: 'feed-2'
+      }
+    ];
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function renderArticles(items, containerId) {
+      const container = document.getElementById(containerId);
+
+      // Build the HTML for all articles
+      container.innerHTML = items.slice(0, 10).map(item => `
+        <div class="article">
+          <a href="${item.link}" target="_blank">${item.title}</a>
+          <div class="date">${formatDate(item.pubDate)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderError(containerId) {
+      document.getElementById(containerId).innerHTML =
+        '<p class="error">Failed to load feed.</p>';
+    }
+
+    // Fetch each feed
+    feeds.forEach(feed => {
+      fetch(API + encodeURIComponent(feed.url))
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'ok') {
+            renderArticles(data.items, feed.containerId);
+          } else {
+            renderError(feed.containerId);
+          }
+        })
+        .catch(() => renderError(feed.containerId));
+    });
+  </script>
+
+</body>
+</html>
